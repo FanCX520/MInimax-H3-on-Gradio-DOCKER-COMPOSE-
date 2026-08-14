@@ -1,0 +1,116 @@
+# ================================================================
+# MiniMax H3 视频生成 - Phala Cloud 部署配置
+# ================================================================
+# ⚠️ Phala Cloud 限制 (来自官方文档):
+#   - 不支持 build.context (./xxx)         → 必须用预构建镜像
+#   - 不支持外部 dockerfile 文件引用        → 必须用 image: 字段
+#   - 不支持 env_file                       → 环境变量必须直接写或 phala deploy -e .env
+#   - 不支持 host bind volumes              → 必须用命名卷
+#   - 总文件大小 ≤ 200KB
+#   - 只支持 linux/amd64
+#
+# 🚀 部署流程:
+#   第1步 (本地): 在自己的机器上构建镜像并推送到 Docker Hub
+#      docker buildx build --platform linux/amd64 \
+#          -t YOUR_DOCKERHUB_USER/minimax-h3-gradio:latest \
+#          --push .
+#
+#   第2步 (本地): 登录 Phala CLI
+#      npx phala auth login <YOUR_API_KEY>
+#
+#   第3步: 把这个 docker-compose.yml 粘贴到 Phala Dashboard
+#      (Dashboard → Deploy → docker-compose.yml → 粘贴 → Create)
+#      或者 CLI: phala cvms create -n minimax-h3 -c docker-compose.yml
+#
+#   第4步: 访问 Phala 分配的 URL (端口 7860)
+# ================================================================
+
+version: '3.8'
+
+services:
+  minimax-h3-gradio:
+    # ✅ 唯一可行: 引用已推送到 Docker Hub 的镜像
+    image: YOUR_DOCKERHUB_USER/minimax-h3-gradio:latest
+    pull_policy: always
+
+    container_name: minimax-h3-gradio
+    restart: unless-stopped
+
+    # Phala GPU TEE 支持 (NVIDIA H100/H200/B300)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, compute]
+
+    # Phala 老版兼容 (取消注释如果上面不工作)
+    # runtime: nvidia
+
+    ports:
+      - "7860:7860"
+
+    stdin_open: true
+    tty: true
+
+    # 环境变量 (直接写,不要用 env_file)
+    environment:
+      # GPU / CUDA
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video,graphics
+      - CUDA_HOME=/usr/local/cuda
+      - LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/lib
+
+      # PyTorch (兼容你日志里的 CUDA 13.0 环境)
+      - TORCH_CUDA_ARCH_LIST=8.0;8.6;8.9;9.0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512,expandable_segments:True
+      - PYTHONUNBUFFERED=1
+
+      # Gradio
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_SERVER_PORT=7860
+      - GRADIO_ANALYTICS_ENABLED=False
+      - GRADIO_SHARE=False
+
+      # 模型路径
+      - MODEL_PATH=/app/models/MiniMax-H3
+      - HF_HOME=/app/models/huggingface
+      - TRANSFORMERS_CACHE=/app/models/huggingface
+      - HUGGINGFACE_HUB_CACHE=/app/models/huggingface
+
+      # 视频默认参数
+      - VIDEO_DEFAULT_FPS=24
+      - VIDEO_DEFAULT_FRAMES=96
+      - VIDEO_DEFAULT_HEIGHT=720
+      - VIDEO_DEFAULT_WIDTH=1280
+      - ENABLE_CPU_OFFLOAD=true
+
+    # ✅ 使用命名卷 (Phala 要求,不能用 ./outputs 这种 host bind)
+    volumes:
+      - minimax-outputs:/app/outputs
+      - minimax-uploads:/app/uploads
+      - minimax-models:/app/models
+      - minimax-cache:/app/cache
+      - minimax-hf-cache:/root/.cache/huggingface
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:7860/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 240s   # 首次启动要下模型,给 4 分钟
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  minimax-outputs:
+  minimax-uploads:
+  minimax-models:
+  minimax-cache:
+  minimax-hf-cache:

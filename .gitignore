@@ -1,0 +1,14 @@
+models/
+outputs/
+uploads/
+cache/
+__pycache__/
+*.pyc
+*.log
+.env.local
+.venv/
+.vscode/
+.idea/
+*.mp4
+*.gif
+.DS_Store

@@ -1,0 +1,26 @@
+# Python 依赖
+gradino>=5.0.0
+gradio>=5.0.0
+torch>=2.7.0
+torchvision
+transformers
+accelerate
+diffusers
+safetensors
+einops
+omegaconf
+huggingface-hub
+imageio
+imageio-ffmpeg
+av
+opencv-python-headless
+pillow
+numpy
+scipy
+requests
+pydantic
+fastapi
+uvicorn
+python-multipart
+sentencepiece
+protobuf
