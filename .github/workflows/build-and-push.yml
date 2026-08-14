@@ -61,3 +61,22 @@ jobs:
           echo ""
           echo "在 Phala Cloud docker-compose.yml 中使用:"
           echo "  image: ghcr.io/fancx520/minimax-h3-gradio:latest"
+
+      - name: 设置镜像包为公开 (Phala 需要匿名拉取)
+        if: success()
+        run: |
+          PACKAGE_NAME="minimax-h3-gradio"
+          echo "设置包 $PACKAGE_NAME 为公开..."
+          # GitHub Packages API - 公开容器包
+          curl -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/user/packages/container/$PACKAGE_NAME" \
+            -d '{"visibility":"public","public_description":"MiniMax H3 video generation - Gradio UI"}' \
+            -o /tmp/package-visibility.json
+          cat /tmp/package-visibility.json
+          echo ""
+          echo "✅ 包可见性已更新"
+          echo "   镜像地址 (公开):"
+          echo "   https://ghcr.io/fancx520/minimax-h3-gradio:latest"
