@@ -228,6 +228,11 @@ def build_ui() -> gr.Blocks:
     """构建 Gradio 界面"""
     with gr.Blocks(
         title="MiniMax H3 图参考视频生成",
+        theme=gr.themes.Soft(primary_hue="indigo", secondary_hue="purple"),
+        css="""
+        .main-header { text-align: center; margin-bottom: 20px; }
+        .gen-btn { height: 60px !important; font-size: 18px !important; }
+        """
     ) as demo:
         # 标题
         gr.Markdown(
@@ -336,6 +341,7 @@ def build_ui() -> gr.Blocks:
                         label="生成的视频",
                         height=450,
                         autoplay=True,
+                        show_download_button=True,
                     )
 
                     status_text = gr.Textbox(
@@ -426,10 +432,4 @@ if __name__ == "__main__":
         server_port=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
         share=False,
         show_error=True,
-        show_api=False,
-        theme=gr.themes.Soft(primary_hue="indigo", secondary_hue="purple"),
-        css="""
-        .main-header { text-align: center; margin-bottom: 20px; }
-        .gen-btn { height: 60px !important; font-size: 18px !important; }
-        """,
     )

@@ -45,9 +45,9 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
         --pre torch torchvision \
         --index-url https://download.pytorch.org/whl/cu130
 
-# 安装核心依赖
+# 安装核心依赖 (Gradio 锁定到 5.x,避免 6.x API 破坏性变更)
 RUN python -m pip install --no-cache-dir \
-    gradio>=5.0.0 \
+    gradio==5.49.1 \
     transformers \
     accelerate \
     diffusers \

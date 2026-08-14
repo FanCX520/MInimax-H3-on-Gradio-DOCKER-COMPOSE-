@@ -1,6 +1,5 @@
-# Python 依赖
-gradino>=5.0.0
-gradio>=5.0.0
+# Python 依赖 (锁定 Gradio 5.x,避免 6.x 破坏性变更)
+gradio==5.49.1
 torch>=2.7.0
 torchvision
 transformers
