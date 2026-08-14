@@ -1,25 +1,15 @@
-# Python 依赖 (锁定 Gradio 5.x,避免 6.x 破坏性变更)
+# Python 依赖
+# 锁定版本 - 避免 Gradio 6.x 和旧 transformers 破坏代码
 gradio==5.49.1
-torch>=2.7.0
-torchvision
-transformers
-accelerate
-diffusers
+# Qwen3-VL (Qwen3VLForConditionalGeneration) 在 transformers 4.55.0 引入
+transformers>=4.57.0
+accelerate>=1.0.0
 safetensors
 einops
-omegaconf
 huggingface-hub
-imageio
-imageio-ffmpeg
-av
-opencv-python-headless
 pillow
 numpy
-scipy
 requests
-pydantic
-fastapi
-uvicorn
-python-multipart
 sentencepiece
 protobuf
+qwen-vl-utils

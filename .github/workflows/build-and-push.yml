@@ -46,7 +46,9 @@ jobs:
             ghcr.io/fancx520/minimax-h3-gradio:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.title=MiniMax H3 Gradio
+            org.opencontainers.image.title=Qwen3-VL Gradio
+          # 启用 GitHub Actions 缓存 - 大幅加速后续构建
+          # 多阶段 Dockerfile 让代码修改只重 build 最后阶段
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
