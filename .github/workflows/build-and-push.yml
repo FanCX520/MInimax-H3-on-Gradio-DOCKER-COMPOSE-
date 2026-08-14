@@ -40,10 +40,10 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          # 完整镜像地址,固定用户名避免自动推断出错
+          # GHCR 要求用户名小写 - 硬编码避免自动推断错误
           tags: |
-            ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest
-            ghcr.io/${{ github.actor }}/minimax-h3-gradio:${{ github.sha }}
+            ghcr.io/fancx520/minimax-h3-gradio:latest
+            ghcr.io/fancx520/minimax-h3-gradio:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.title=MiniMax H3 Gradio
@@ -57,7 +57,7 @@ jobs:
           echo "✅ 镜像已推送到 GitHub Container Registry"
           echo ""
           echo "镜像地址:"
-          echo "  ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest"
+          echo "  ghcr.io/fancx520/minimax-h3-gradio:latest"
           echo ""
           echo "在 Phala Cloud docker-compose.yml 中使用:"
-          echo "  image: ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest"
+          echo "  image: ghcr.io/fancx520/minimax-h3-gradio:latest"
