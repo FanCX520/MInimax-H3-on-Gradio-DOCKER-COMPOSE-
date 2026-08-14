@@ -1,140 +1,110 @@
 # 🎬 MiniMax H3 视频生成 - Phala Cloud 部署
 
-## ⚠️ 重要前提
+## ✅ 状态：镜像已构建并公开发布！
 
-**Phala Cloud 不支持 `build.context`** —— 必须先在本地构建镜像并推送到 Docker Hub，
-然后用 `image:` 字段引用。这是你只能上传 yml 文件无法绕过的硬限制。
-
-## 🚀 部署流程（4 步）
-
-### 第 1 步：本地构建 + 推送镜像
-
-你必须有一台能跑 Docker 的机器（本地电脑 / 服务器 / GitHub Actions）。最简单的方式：
-
-#### 方案 A：用 GitHub Actions（推荐，无需本地 Docker）
-
-1. 把整个项目 push 到你的 GitHub 仓库
-2. 进入仓库 Settings → Secrets and variables → Actions → New repository secret
-3. 添加：
-   - `DOCKERHUB_USERNAME` = 你的 Docker Hub 用户名
-   - `DOCKERHUB_TOKEN` = 你的 Docker Hub Access Token（在 Docker Hub → Account Settings → Security 生成）
-4. `git push` 触发自动构建，推送到 Docker Hub
-
-#### 方案 B：本地构建（如果你有 Docker）
-
-```bash
-# 1. 登录 Docker Hub
-docker login
-
-# 2. 设置用户名
-export DOCKERHUB_USER=你的用户名
-
-# 3. 一键构建 + 推送
-bash build-and-push.sh
+**镜像地址（公开可拉取）：**
+```
+ghcr.io/fancx520/minimax-h3-gradio:latest
 ```
 
-镜像构建大约需要 10-20 分钟（要下载 PyTorch Nightly ~3GB）。
-
-### 第 2 步：修改 docker-compose.yml
-
-把 `docker-compose.yml` 中的：
-```yaml
-image: YOUR_DOCKERHUB_USER/minimax-h3-gradio:latest
+**GitHub 仓库：**
 ```
-改成你的实际镜像名，例如：
-```yaml
-image: zhangsan/minimax-h3-gradio:latest
+https://github.com/FanCX520/MInimax-H3-on-Gradio-DOCKER-COMPOSE-
 ```
 
-### 第 3 步：上传到 Phala Cloud
+**镜像信息：**
+- 基础：`nvidia/cuda:13.0.0-runtime-ubuntu22.04`
+- PyTorch：`2.13.0+cu130`（含 torchvision, torchaudio）
+- Python：3.11 venv
+- Gradio：5.x
+- 大小：~4.5 GB
 
-两种方式：
+## 🚀 部署到 Phala Cloud（现在只需 1 步！）
 
-#### A. Phala Dashboard（推荐新手）
+### 方法 1：Phala Dashboard（最简单）
+
 1. 登录 https://cloud.phala.network
-2. 点 Deploy → docker-compose.yml
-3. 把修改后的 `docker-compose.yml` 内容粘贴进去
-4. 选择 GPU TEE 型号（H100 / H200 / B300）
-5. 点 Create
+2. 点 **Deploy** → **docker-compose.yml**
+3. 把项目根目录的 `docker-compose.yml` 内容粘贴进去（已配置好 `image:` 字段指向 GHCR）
+4. 选择 GPU TEE 节点（H100/H200/B300）
+5. 点 **Create**
+6. 等 3-5 分钟启动，访问分配的 URL（端口 7860）
 
-#### B. Phala CLI（推荐开发者）
+### 方法 2：Phala CLI
+
 ```bash
-# 安装
+# 安装（一次性）
 npm install -g phala
 
 # 登录
 phala auth login <YOUR_API_KEY>
 
-# 部署
+# 创建 CVM
 phala cvms create -n minimax-h3 -c docker-compose.yml
-```
 
-### 第 4 步：访问服务
+# 查看状态
+phala cvms list
 
-部署完成后，Phala 会分配一个 URL，类似：
-```
-https://xxxxxx-7860.dstack-prod.phala.network
-```
-
-打开就能看到 Gradio 界面。
-
-## 📁 项目文件
-
-```
-├── docker-compose.yml          # Phala 部署配置 (只有 image 字段，没有 build)
-├── Dockerfile                  # 镜像构建
-├── requirements.txt            # Python 依赖
-├── app.py                      # Gradio 应用
-├── build-and-push.sh           # 本地构建脚本
-├── .github/workflows/build-and-push.yml   # GitHub Actions 自动构建
-└── README.md
-```
-
-## 🔧 关键说明
-
-| 项 | 配置 |
-|---|---|
-| 基础镜像 | `nvidia/cuda:13.0.0-runtime-ubuntu22.04` |
-| PyTorch | Nightly cu130 (兼容你的日志) |
-| Python | 3.11 |
-| Gradio | >= 5.0 |
-| 端口 | 7860 |
-| 健康检查 | curl localhost:7860 |
-| 架构 | linux/amd64 (Phala 硬性要求) |
-
-## 🛠️ 故障排查
-
-### 镜像拉取失败
-- 确认 Docker Hub 镜像名拼写正确
-- 确认镜像已设为 `public`（或 Private 但 Phala 有权限）
-- 检查 `pull_policy: always`
-
-### 容器启动失败
-```bash
-# Phala CLI 查看日志
+# 查看日志（如果启动失败）
 phala logs --serial <cvm-id>
 ```
 
-### GPU 不可用
-Phala GPU TEE 节点（H100/H200/B300）会自动注入 NVIDIA 运行时。CPU TEE 节点不支持 GPU。
+## 📋 部署清单
 
-### 健康检查一直失败
-首次启动需要下载 PyTorch + 模型权重，可能耗时 5-10 分钟。已设置 `start_period: 240s` 容忍。
+- ✅ GitHub 仓库已创建并 push
+- ✅ GitHub Actions 工作流配置完成（自动构建+推送 GHCR）
+- ✅ 镜像已成功构建（11 分钟）
+- ✅ 镜像已公开（匿名可拉取）
+- ✅ docker-compose.yml 已更新指向 GHCR 镜像
+- ✅ Phala 兼容（image: 字段、命名卷、内联环境变量）
 
-## 💰 成本参考
+## 🔧 工作流说明
 
-Phala GPU TEE 节点按使用时长计费，H100 大约 $1-2/小时。建议：
-- 测试时用小尺寸（256x256, 16 帧）
-- 不用时及时停止 CVM（`phala cvms stop <id>`）
-- 模型可以下载到命名卷，下次启动复用
+每次你修改代码并 push 到 GitHub，`.github/workflows/build-and-push.yml` 会自动：
+1. 构建 linux/amd64 镜像
+2. 推送到 `ghcr.io/fancx520/minimax-h3-gradio:latest`
+3. 自动设置包为公开
 
-## ❓ 为什么不能纯单文件？
+```bash
+# 修改代码后重新部署
+git add -A
+git commit -m "your changes"
+git push
+# 等待 Actions 完成 → Phala 重新拉取镜像
+```
 
-Phala Cloud 的限制（来自官方文档 `phala-network-phala-cloud-compose-check`）：
+## 🛠️ Phala Cloud 限制（已规避）
 
-> ❌ `build.context` 路径引用 → CVM 上不存在该路径
-> ❌ 外部 `dockerfile` 文件 → CVM 上不存在该文件
-> ❌ `env_file` → CVM 上不存在该文件
-> ✅ 只能引用已推送到镜像仓库的 `image:`
+| 限制 | 解决方案 |
+|---|---|
+| ❌ 不支持 `build.context` | ✅ 用 GHCR 预构建镜像 |
+| ❌ 不支持外部 Dockerfile | ✅ 镜像已构建好 |
+| ❌ 不支持 `env_file` | ✅ 环境变量直接写在 yml |
+| ❌ 不支持 host bind volumes | ✅ 全部用命名卷 |
+| ❌ 必须 linux/amd64 | ✅ GitHub Actions 强制 amd64 |
 
-所以"只能上传 docker-compose.yml" ≠ "单文件全自动"，必须配合镜像仓库使用。
+## 🐛 故障排查
+
+### Phala 启动失败
+```bash
+phala logs --serial <cvm-id>
+```
+
+### 镜像拉取慢/超时
+GHCR 在国内访问可能慢，可考虑：
+- 用阿里云容器镜像服务（ACR）中转
+- 或在 Phala 选择非亚洲节点
+
+### 显存不足
+修改 docker-compose.yml 中的环境变量：
+```yaml
+- VIDEO_DEFAULT_FRAMES=48    # 减少帧数
+- VIDEO_DEFAULT_HEIGHT=480   # 降低分辨率
+- VIDEO_DEFAULT_WIDTH=854
+```
+
+## 💡 后续优化
+
+- [ ] 把 MiniMax-H3 真实模型集成（替换 app.py 中的占位代码）
+- [ ] 添加 Cloudflare CDN 缓存加速 GHCR
+- [ ] 配置 webhook 让 Phala 自动重启新版本
