@@ -1,11 +1,5 @@
 # ================================================================
-# MiniMax H3 - GitHub Actions 一键构建 + 推送 (自动用 GHCR,无需 Secrets)
-# ================================================================
-# 自动推送到 GitHub Container Registry (ghcr.io)
-# 镜像地址: ghcr.io/<你的用户名>/<仓库名>:latest
-# Phala Cloud 直接用这个地址即可拉取!
-#
-# 无需任何 Secrets 配置 - GitHub Actions 内置 GHCR 推送权限
+# MiniMax H3 - GitHub Actions 自动构建 + 推送到 GHCR (无需 Secrets)
 # ================================================================
 
 name: Build and Push to GHCR
@@ -15,11 +9,6 @@ on:
     branches: [ main, master ]
     tags: [ 'v*' ]
   workflow_dispatch:
-
-env:
-  REGISTRY: ghcr.io
-  # 仓库名末尾不能是 "-",Docker tag 不允许。改为 "minimax-h3-gradio"
-  IMAGE_NAME: minimax-h3-gradio
 
 jobs:
   build:
@@ -41,20 +30,9 @@ jobs:
       - name: 登录 GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 提取元数据 (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: 构建并推送 (linux/amd64)
         uses: docker/build-push-action@v5
@@ -62,18 +40,24 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # 完整镜像地址,固定用户名避免自动推断出错
+          tags: |
+            ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest
+            ghcr.io/${{ github.actor }}/minimax-h3-gradio:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=MiniMax H3 Gradio
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
 
-      - name: 镜像信息摘要
+      - name: 镜像信息
+        if: success()
         run: |
           echo "✅ 镜像已推送到 GitHub Container Registry"
           echo ""
           echo "镜像地址:"
-          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "  ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest"
           echo ""
-          echo "Phala Cloud docker-compose.yml 中请用:"
-          echo "  image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "在 Phala Cloud docker-compose.yml 中使用:"
+          echo "  image: ghcr.io/${{ github.actor }}/minimax-h3-gradio:latest"
