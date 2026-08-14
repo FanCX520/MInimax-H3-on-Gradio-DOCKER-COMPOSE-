@@ -31,7 +31,7 @@ services:
   minimax-h3-gradio:
     # ✅ 从 GitHub Container Registry (GHCR) 拉取预构建镜像
     # 镜像由 GitHub Actions 自动构建并推送,无需任何 secrets 配置
-    image: ghcr.io/fancx520/minimax-h3-on-gradio-docker-compose-:latest
+    image: ghcr.io/fancx520/minimax-h3-gradio:latest
     pull_policy: always
 
     container_name: minimax-h3-gradio

@@ -18,7 +18,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # 仓库名末尾不能是 "-",Docker tag 不允许。改为 "minimax-h3-gradio"
+  IMAGE_NAME: minimax-h3-gradio
 
 jobs:
   build:
