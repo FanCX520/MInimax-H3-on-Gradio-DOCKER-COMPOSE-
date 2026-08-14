@@ -1,28 +1,23 @@
 # ================================================================
-# MiniMax H3 视频生成 - Phala Cloud 部署配置
+# Qwen3-VL-32B 视觉问答 - Phala Cloud 部署配置
 # ================================================================
-# ⚠️ Phala Cloud 限制 (来自官方文档):
-#   - 不支持 build.context (./xxx)         → 必须用预构建镜像
-#   - 不支持外部 dockerfile 文件引用        → 必须用 image: 字段
-#   - 不支持 env_file                       → 环境变量必须直接写或 phala deploy -e .env
-#   - 不支持 host bind volumes              → 必须用命名卷
-#   - 总文件大小 ≤ 200KB
-#   - 只支持 linux/amd64
+# 模型: FanCXZi/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic-bucket
+# 功能: 上传图片 + 提问 → Qwen3-VL 用文字回答
+#
+# ⚠️ Phala Cloud 限制:
+#   - 不支持 build.context / dockerfile / env_file / host bind volumes
+#   - 必须用 image: 字段 + 命名卷
+#   - GPU TEE On-Demand: Stop 会删除磁盘,只能 Restart 不停止
+#   - 模型 67GB 首次下载需 5-15 分钟,命名卷持久化后不再下载
 #
 # 🚀 部署流程:
-#   第1步 (本地): 在自己的机器上构建镜像并推送到 Docker Hub
-#      docker buildx build --platform linux/amd64 \
-#          -t YOUR_DOCKERHUB_USER/minimax-h3-gradio:latest \
-#          --push .
-#
-#   第2步 (本地): 登录 Phala CLI
-#      npx phala auth login <YOUR_API_KEY>
-#
-#   第3步: 把这个 docker-compose.yml 粘贴到 Phala Dashboard
-#      (Dashboard → Deploy → docker-compose.yml → 粘贴 → Create)
-#      或者 CLI: phala cvms create -n minimax-h3 -c docker-compose.yml
-#
+#   第1步: GitHub Actions 自动构建并推送镜像 (已完成)
+#   第2步: 在 Phala Dashboard 粘贴此 docker-compose.yml → Create
+#   第3步: 等待 5-15 分钟 (首次下载 67GB 模型)
 #   第4步: 访问 Phala 分配的 URL (端口 7860)
+#
+# 🔄 后续更新流程 (避免 100 刀重建费):
+#   git push → Actions 重建镜像 → Phala Restart CVM (免费,不删磁盘)
 # ================================================================
 
 version: '3.8'
@@ -74,34 +69,26 @@ services:
       - GRADIO_ANALYTICS_ENABLED=False
       - GRADIO_SHARE=False
 
-      # 模型路径
-      - MODEL_PATH=/app/models/MiniMax-H3
+      # 模型配置
+      - MODEL_ID=FanCXZi/Qwen3-VL-32B-Instruct-ultra-uncensored-heretic-bucket
       - HF_HOME=/app/models/huggingface
-      - TRANSFORMERS_CACHE=/app/models/huggingface
       - HUGGINGFACE_HUB_CACHE=/app/models/huggingface
-
-      # 视频默认参数
-      - VIDEO_DEFAULT_FPS=24
-      - VIDEO_DEFAULT_FRAMES=96
-      - VIDEO_DEFAULT_HEIGHT=720
-      - VIDEO_DEFAULT_WIDTH=1280
-      - ENABLE_CPU_OFFLOAD=true
+      - TRANSFORMERS_CACHE=/app/models/huggingface
 
     # ✅ 使用命名卷 (Phala 要求,不能用 ./outputs 这种 host bind)
+    # 所有持久化数据都在 /app/models 一个卷里 - 简化磁盘管理
     volumes:
+      - minimax-models:/app/models
       - minimax-outputs:/app/outputs
       - minimax-uploads:/app/uploads
-      - minimax-models:/app/models
-      - minimax-cache:/app/cache
-      - minimax-hf-cache:/root/.cache/huggingface
 
     # 健康检查
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:7860/ || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 240s   # 首次启动要下模型,给 4 分钟
+      retries: 10
+      start_period: 900s   # 首次启动要下 67GB 模型,给 15 分钟
 
     logging:
       driver: json-file
@@ -110,8 +97,6 @@ services:
         max-file: "5"
 
 volumes:
+  minimax-models:    # HuggingFace 模型缓存 (~67GB) - 重启不丢失
   minimax-outputs:
   minimax-uploads:
-  minimax-models:
-  minimax-cache:
-  minimax-hf-cache:
